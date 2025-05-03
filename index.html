@@ -12,7 +12,7 @@
             padding: 20px;
             transition: background-color 0.3s, color 0.3s;
         }
-        #messages, #bannedUsers {
+        #messages, #bannedUsers, #photos {
             border: 1px solid #ccc;
             padding: 10px;
             background: white;
@@ -31,7 +31,7 @@
             background-color: #333;
             color: white;
         }
-        .dark-theme #messages, .dark-theme #bannedUsers {
+        .dark-theme #messages, .dark-theme #bannedUsers, .dark-theme #photos {
             background: #444;
             border-color: #666;
         }
@@ -50,28 +50,38 @@
 
         <h2>Отправить сообщение от имени администратора</h2>
         <input type="text" id="adminMessage" placeholder="Введите сообщение от админа" />
-        <input type="text" id="adminUser" placeholder="Введите номер пользователя" />
+        <input type="text" id="adminUser" placeholder="Введите ник пользователя" />
         <button id="sendAdmin">Отправить</button>
         
+        <h2>Забанить пользователя по нику</h2>
+        <input type="text" id="banUser" placeholder="Введите ник для бана" />
+        <button id="ban">Забанить</button>
+
         <h2>Загрузить фото</h2>
         <input type="file" id="photoUpload" accept="image/*" />
         <button id="uploadPhoto">Загрузить фото</button>
+        
+        <h2>Удалить все сообщения</h2>
+        <button id="deleteMessages">Удалить все сообщения</button>
+
+        <h2>Удалить все фотографии</h2>
+        <button id="deletePhotos">Удалить все фотографии</button>
 
         <h2>Сообщения</h2>
         <div id="messages"></div>
         <button id="reset">Сбросить все сообщения</button>
 
         <h2>Забаненные пользователи</h2>
-        <input type="text" id="banUser" placeholder="Введите номер для бана" />
-        <button id="ban">Забанить</button>
         <div id="bannedUsers"></div>
+
+        <h2>Загруженные фотографии</h2>
+        <div id="photos"></div>
     </div>
 
     <script>
         const messagesDiv = document.getElementById('messages');
         const bannedUsersDiv = document.getElementById('bannedUsers');
-        const photoUpload = document.getElementById('photoUpload');
-        const uploadPhotoButton = document.getElementById('uploadPhoto');
+        const photosDiv = document.getElementById('photos');
         const resetButton = document.getElementById('reset');
         const sendAdminButton = document.getElementById('sendAdmin');
         const adminMessageInput = document.getElementById('adminMessage');
@@ -82,6 +92,10 @@
         const loginButton = document.getElementById('loginButton');
         const passwordInput = document.getElementById('password');
         const loginError = document.getElementById('loginError');
+        const photoUpload = document.getElementById('photoUpload');
+        const uploadPhotoButton = document.getElementById('uploadPhoto');
+        const deleteMessagesButton = document.getElementById('deleteMessages');
+        const deletePhotosButton = document.getElementById('deletePhotos');
 
         // Проверка пароля
         const checkPassword = () => {
@@ -90,6 +104,8 @@
                 loginForm.style.display = 'none';
                 adminPanel.style.display = 'block';
                 loadMessages();
+                loadBannedUsers();
+                loadPhotos();
             } else {
                 loginError.style.display = 'block';
             }
@@ -98,55 +114,33 @@
         const loadMessages = () => {
             const messages = JSON.parse(localStorage.getItem('messages')) || [];
             messagesDiv.innerHTML = '';
-            messages.forEach((msg, index) => {
+            messages.forEach((msg) => {
                 const msgElement = document.createElement('div');
                 msgElement.textContent = `Пользователь ${msg.number}: ${msg.text}`;
-                
-                const editButton = document.createElement('button');
-                editButton.textContent = 'Редактировать';
-                editButton.onclick = () => editMessage(index);
-                
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = 'Удалить';
-                deleteButton.onclick = () => deleteMessage(index);
-                
-                msgElement.appendChild(editButton);
-                msgElement.appendChild(deleteButton);
                 messagesDiv.appendChild(msgElement);
             });
         };
 
-        const deleteMessage = (index) => {
-            const messages = JSON.parse(localStorage.getItem('messages')) || [];
-            messages.splice(index, 1);
-            localStorage.setItem('messages', JSON.stringify(messages));
-            loadMessages();
-        };
-
-        const editMessage = (index) => {
-            const messages = JSON.parse(localStorage.getItem('messages')) || [];
-            const newMessage = prompt('Введите новое сообщение:', messages[index].text);
-            if (newMessage) {
-                messages[index].text = newMessage;
-                localStorage.setItem('messages', JSON.stringify(messages));
-                loadMessages();
-            }
-        };
-
-        const banUser = (userNumber) => {
+        const loadBannedUsers = () => {
             const bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || [];
-            if (!bannedUsers.includes(userNumber)) {
-                bannedUsers.push(userNumber);
-                localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
-                loadBannedUsers();
-            }
+            bannedUsersDiv.innerHTML = '';
+            bannedUsers.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.textContent = `Забаненный пользователь: ${user}`;
+                bannedUsersDiv.appendChild(userElement);
+            });
         };
 
-        const unbanUser = (index) => {
-            const bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || [];
-            bannedUsers.splice(index, 1);
-            localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
-            loadBannedUsers();
+        const loadPhotos = () => {
+            const photos = JSON.parse(localStorage.getItem('photos')) || [];
+            photosDiv.innerHTML = '<h3>Загруженные фотографии:</h3>';
+            photos.forEach(photo => {
+                const imgElement = document.createElement('img');
+                imgElement.src = photo;
+                imgElement.style.width = '100px';
+                imgElement.style.margin = '5px';
+                photosDiv.appendChild(imgElement);
+            });
         };
 
         const sendAdminMessage = () => {
@@ -160,8 +154,20 @@
                 adminMessageInput.value = '';
                 loadMessages();
             } else {
-                alert('Пожалуйста, введите сообщение и номер пользователя.');
+                alert('Пожалуйста, введите сообщение и ник пользователя.');
             }
+        };
+
+        const deleteMessages = () => {
+            localStorage.removeItem('messages');
+            loadMessages();
+            alert('Все сообщения были удалены.');
+        };
+
+        const deletePhotos = () => {
+            localStorage.removeItem('photos');
+            loadPhotos();
+            alert('Все фотографии были удалены.');
         };
 
         resetButton.addEventListener('click', () => {
@@ -171,25 +177,24 @@
 
         loginButton.addEventListener('click', checkPassword);
         sendAdminButton.addEventListener('click', sendAdminMessage);
+        deleteMessagesButton.addEventListener('click', deleteMessages);
+        deletePhotosButton.addEventListener('click', deletePhotos);
         
-        // Загрузка фотографии
-        uploadPhotoButton.addEventListener('click', () => {
-            const file = photoUpload.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const messages = JSON.parse(localStorage.getItem('messages')) || [];
-                    messages.push({ number: 'Админ', text: '' }); // Пустое сообщение для фото
-                    const photos = JSON.parse(localStorage.getItem('photos')) || [];
-                    photos.push(event.target.result);
-                    localStorage.setItem('photos', JSON.stringify(photos));
-                    localStorage.setItem('messages', JSON.stringify(messages));
-                    loadMessages();
-                    photoUpload.value = ''; // Очистить поле загрузки
-                };
-                reader.readAsDataURL(file);
+        // Забанить пользователя по нику
+        document.getElementById('ban').addEventListener('click', () => {
+            const userNick = banUserInput.value;
+            if (userNick) {
+                const bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || [];
+                if (!bannedUsers.includes(userNick)) {
+                    bannedUsers.push(userNick);
+                    localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
+                    loadBannedUsers();
+                    banUserInput.value = '';
+                } else {
+                    alert('Пользователь уже забанен.');
+                }
             } else {
-                alert('Пожалуйста, выберите фотографию для загрузки.');
+                alert('Пожалуйста, введите ник для бана.');
             }
         });
 
