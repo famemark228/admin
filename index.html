@@ -12,7 +12,7 @@
             padding: 20px;
             transition: background-color 0.3s, color 0.3s;
         }
-        #messages, #bannedUsers {
+        #messages, #bannedUsers, #photos {
             border: 1px solid #ccc;
             padding: 10px;
             background: white;
@@ -31,7 +31,7 @@
             background-color: #333;
             color: white;
         }
-        .dark-theme #messages, .dark-theme #bannedUsers {
+        .dark-theme #messages, .dark-theme #bannedUsers, .dark-theme #photos {
             background: #444;
             border-color: #666;
         }
@@ -48,13 +48,16 @@
     <div id="adminPanel" style="display: none;">
         <h1>Панель управления сайтом</h1>
 
-        <button id="toggleTheme">Сменить тему</button>
-        
         <h2>Отправить сообщение от имени администратора</h2>
         <input type="text" id="adminMessage" placeholder="Введите сообщение от админа" />
         <input type="text" id="adminUser" placeholder="Введите номер пользователя" />
         <button id="sendAdmin">Отправить</button>
         
+        <h2>Загрузить фото</h2>
+        <input type="file" id="photoUpload" accept="image/*" />
+        <button id="uploadPhoto">Загрузить фото</button>
+        <div id="photos"></div>
+
         <h2>Сообщения</h2>
         <div id="messages"></div>
         <button id="reset">Сбросить все сообщения</button>
@@ -68,6 +71,7 @@
     <script>
         const messagesDiv = document.getElementById('messages');
         const bannedUsersDiv = document.getElementById('bannedUsers');
+        const photosDiv = document.getElementById('photos');
         const resetButton = document.getElementById('reset');
         const sendAdminButton = document.getElementById('sendAdmin');
         const banButton = document.getElementById('ban');
@@ -79,17 +83,10 @@
         const loginButton = document.getElementById('loginButton');
         const passwordInput = document.getElementById('password');
         const loginError = document.getElementById('loginError');
-        const toggleThemeButton = document.getElementById('toggleTheme');
-        let darkTheme = false;
+        const photoUpload = document.getElementById('photoUpload');
+        const uploadPhotoButton = document.getElementById('uploadPhoto');
 
-        // Проверка сохраненной темы при загрузке
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            darkTheme = true;
-            document.body.classList.add('dark-theme');
-        }
-
-        // Функция для проверки пароля
+        // Проверка пароля
         const checkPassword = () => {
             const password = passwordInput.value;
             if (password === 'admin') {
@@ -97,6 +94,7 @@
                 adminPanel.style.display = 'block';
                 loadMessages();
                 loadBannedUsers();
+                loadPhotos();
             } else {
                 loginError.style.display = 'block';
             }
@@ -136,6 +134,18 @@
                 
                 userElement.appendChild(unbanButton);
                 bannedUsersDiv.appendChild(userElement);
+            });
+        };
+
+        const loadPhotos = () => {
+            const photos = JSON.parse(localStorage.getItem('photos')) || [];
+            photosDiv.innerHTML = '<h3>Загруженные фотографии:</h3>';
+            photos.forEach(photo => {
+                const imgElement = document.createElement('img');
+                imgElement.src = photo;
+                imgElement.style.width = '100px';
+                imgElement.style.margin = '5px';
+                photosDiv.appendChild(imgElement);
             });
         };
 
@@ -204,10 +214,22 @@
             }
         });
 
-        toggleThemeButton.addEventListener('click', () => {
-            darkTheme = !darkTheme;
-            document.body.classList.toggle('dark-theme', darkTheme);
-            localStorage.setItem('theme', darkTheme ? 'dark' : 'light');
+        // Загрузка фотографии
+        uploadPhotoButton.addEventListener('click', () => {
+            const file = photoUpload.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const photos = JSON.parse(localStorage.getItem('photos')) || [];
+                    photos.push(event.target.result);
+                    localStorage.setItem('photos', JSON.stringify(photos));
+                    loadPhotos();
+                    photoUpload.value = ''; // Очистить поле загрузки
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Пожалуйста, выберите фотографию для загрузки.');
+            }
         });
 
         loginForm.style.display = 'block'; // Показываем форму входа
