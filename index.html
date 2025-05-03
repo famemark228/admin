@@ -10,6 +10,7 @@
             background-color: #f4f4f4;
             margin: 0;
             padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
         }
         #messages, #bannedUsers {
             border: 1px solid #ccc;
@@ -26,6 +27,14 @@
         #loginForm {
             display: none;
         }
+        .dark-theme {
+            background-color: #333;
+            color: white;
+        }
+        .dark-theme #messages, .dark-theme #bannedUsers {
+            background: #444;
+            border-color: #666;
+        }
     </style>
 </head>
 <body>
@@ -38,6 +47,8 @@
 
     <div id="adminPanel" style="display: none;">
         <h1>Панель управления сайтом</h1>
+
+        <button id="toggleTheme">Сменить тему</button>
         
         <h2>Отправить сообщение от имени администратора</h2>
         <input type="text" id="adminMessage" placeholder="Введите сообщение от админа" />
@@ -68,6 +79,15 @@
         const loginButton = document.getElementById('loginButton');
         const passwordInput = document.getElementById('password');
         const loginError = document.getElementById('loginError');
+        const toggleThemeButton = document.getElementById('toggleTheme');
+        let darkTheme = false;
+
+        // Проверка сохраненной темы при загрузке
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            darkTheme = true;
+            document.body.classList.add('dark-theme');
+        }
 
         // Функция для проверки пароля
         const checkPassword = () => {
@@ -89,10 +109,15 @@
                 const msgElement = document.createElement('div');
                 msgElement.textContent = `Пользователь ${msg.number}: ${msg.text}`;
                 
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Редактировать';
+                editButton.onclick = () => editMessage(index);
+                
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Удалить';
                 deleteButton.onclick = () => deleteMessage(index);
                 
+                msgElement.appendChild(editButton);
                 msgElement.appendChild(deleteButton);
                 messagesDiv.appendChild(msgElement);
             });
@@ -119,6 +144,16 @@
             messages.splice(index, 1);
             localStorage.setItem('messages', JSON.stringify(messages));
             loadMessages();
+        };
+
+        const editMessage = (index) => {
+            const messages = JSON.parse(localStorage.getItem('messages')) || [];
+            const newMessage = prompt('Введите новое сообщение:', messages[index].text);
+            if (newMessage) {
+                messages[index].text = newMessage;
+                localStorage.setItem('messages', JSON.stringify(messages));
+                loadMessages();
+            }
         };
 
         const banUser = (userNumber) => {
@@ -167,6 +202,12 @@
             } else {
                 alert('Пожалуйста, введите номер для бана.');
             }
+        });
+
+        toggleThemeButton.addEventListener('click', () => {
+            darkTheme = !darkTheme;
+            document.body.classList.toggle('dark-theme', darkTheme);
+            localStorage.setItem('theme', darkTheme ? 'dark' : 'light');
         });
 
         loginForm.style.display = 'block'; // Показываем форму входа
