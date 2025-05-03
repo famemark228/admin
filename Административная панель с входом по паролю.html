@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Административная панель</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        #messages, #bannedUsers {
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: white;
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px;
+            margin: 5px;
+        }
+        #loginForm {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginForm">
+        <h2>Вход в административную панель</h2>
+        <input type="password" id="password" placeholder="Введите пароль" />
+        <button id="loginButton">Войти</button>
+        <p id="loginError" style="color: red; display: none;">Неверный пароль!</p>
+    </div>
+
+    <div id="adminPanel" style="display: none;">
+        <h1>Административная панель мессенджера</h1>
+        
+        <h2>Отправить сообщение от имени администратора</h2>
+        <input type="text" id="adminMessage" placeholder="Введите сообщение от админа" />
+        <input type="text" id="adminUser" placeholder="Введите номер пользователя" />
+        <button id="sendAdmin">Отправить</button>
+        
+        <h2>Сообщения</h2>
+        <div id="messages"></div>
+        <button id="reset">Сбросить все сообщения</button>
+
+        <h2>Забаненные пользователи</h2>
+        <input type="text" id="banUser" placeholder="Введите номер для бана" />
+        <button id="ban">Забанить</button>
+        <div id="bannedUsers"></div>
+    </div>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const bannedUsersDiv = document.getElementById('bannedUsers');
+        const resetButton = document.getElementById('reset');
+        const sendAdminButton = document.getElementById('sendAdmin');
+        const banButton = document.getElementById('ban');
+        const adminMessageInput = document.getElementById('adminMessage');
+        const adminUserInput = document.getElementById('adminUser');
+        const banUserInput = document.getElementById('banUser');
+        const loginForm = document.getElementById('loginForm');
+        const adminPanel = document.getElementById('adminPanel');
+        const loginButton = document.getElementById('loginButton');
+        const passwordInput = document.getElementById('password');
+        const loginError = document.getElementById('loginError');
+
+        // Функция для проверки пароля
+        const checkPassword = () => {
+            const password = passwordInput.value;
+            if (password === 'admin') {
+                loginForm.style.display = 'none';
+                adminPanel.style.display = 'block';
+                loadMessages();
+                loadBannedUsers();
+            } else {
+                loginError.style.display = 'block';
+            }
+        };
+
+        const loadMessages = () => {
+            const messages = JSON.parse(localStorage.getItem('messages')) || [];
+            messagesDiv.innerHTML = '';
+            messages.forEach((msg, index) => {
+                const msgElement = document.createElement('div');
+                msgElement.textContent = `Пользователь ${msg.number}: ${msg.text}`;
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Удалить';
+                deleteButton.onclick = () => deleteMessage(index);
+                
+                msgElement.appendChild(deleteButton);
+                messagesDiv.appendChild(msgElement);
+            });
+        };
+
+        const loadBannedUsers = () => {
+            const bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || [];
+            bannedUsersDiv.innerHTML = '';
+            bannedUsers.forEach((user, index) => {
+                const userElement = document.createElement('div');
+                userElement.textContent = `Пользователь ${user}`;
+                
+                const unbanButton = document.createElement('button');
+                unbanButton.textContent = 'Разбанить';
+                unbanButton.onclick = () => unbanUser(index);
+                
+                userElement.appendChild(unbanButton);
+                bannedUsersDiv.appendChild(userElement);
+            });
+        };
+
+        const deleteMessage = (index) => {
+            const messages = JSON.parse(localStorage.getItem('messages')) || [];
+            messages.splice(index, 1);
+            localStorage.setItem('messages', JSON.stringify(messages));
+            loadMessages();
+        };
+
+        const banUser = (userNumber) => {
+            const bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || [];
+            if (!bannedUsers.includes(userNumber)) {
+                bannedUsers.push(userNumber);
+                localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
+                loadBannedUsers();
+            }
+        };
+
+        const unbanUser = (index) => {
+            const bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || [];
+            bannedUsers.splice(index, 1);
+            localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
+            loadBannedUsers();
+        };
+
+        const sendAdminMessage = () => {
+            const message = adminMessageInput.value;
+            const userNumber = adminUserInput.value;
+
+            if (message && userNumber) {
+                const messages = JSON.parse(localStorage.getItem('messages')) || [];
+                messages.push({ number: 'Админ', text: message });
+                localStorage.setItem('messages', JSON.stringify(messages));
+                adminMessageInput.value = '';
+                loadMessages();
+            } else {
+                alert('Пожалуйста, введите сообщение и номер пользователя.');
+            }
+        };
+
+        resetButton.addEventListener('click', () => {
+            localStorage.removeItem('messages');
+            loadMessages();
+        });
+
+        loginButton.addEventListener('click', checkPassword);
+        sendAdminButton.addEventListener('click', sendAdminMessage);
+        banButton.addEventListener('click', () => {
+            const userNumber = banUserInput.value;
+            if (userNumber) {
+                banUser(userNumber);
+                banUserInput.value = '';
+            } else {
+                alert('Пожалуйста, введите номер для бана.');
+            }
+        });
+
+        loginForm.style.display = 'block'; // Показываем форму входа
+    </script>
+</body>
+</html>
